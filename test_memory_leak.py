@@ -33,8 +33,14 @@ async def test_iteration(num_parallel_calls=10):
         query: str = dspy.InputField(desc="Query to process")
         result: str = dspy.OutputField(desc="Processed result")
     
-    # Create fresh ChainOfThought instance
-    chain_of_thought = dspy.ChainOfThought(SimpleSignature)
+    # Get module type from environment variable
+    module_type = os.environ.get("DSPY_MODULE", "chainofthought")
+    
+    # Create fresh module instance
+    if module_type == "predict":
+        module = dspy.Predict(SimpleSignature)
+    else:  # default to chainofthought
+        module = dspy.ChainOfThought(SimpleSignature)
     
     # Create test inputs
     test_inputs = []
@@ -47,7 +53,7 @@ async def test_iteration(num_parallel_calls=10):
     # Execute parallel calls
     tasks = []
     for context, query in test_inputs:
-        task = chain_of_thought.acall(
+        task = module.acall(
             context=context,
             query=query
         )
@@ -57,7 +63,7 @@ async def test_iteration(num_parallel_calls=10):
     await asyncio.gather(*tasks, return_exceptions=True)
     
     # Explicitly delete the instance
-    del chain_of_thought
+    del module
     
     # Force garbage collection
     gc.collect()
@@ -66,10 +72,14 @@ async def main():
     """Main test loop demonstrating memory leak."""
     import dspy
     
+    # Get module type from environment variable
+    module_type = os.environ.get("DSPY_MODULE", "chainofthought")
+    module_name = "ChainOfThought" if module_type == "chainofthought" else "Predict"
+    
     print("=" * 60)
     print("DSPy Memory Leak Reproduction")
     print("=" * 60)
-    print("\nThis test demonstrates that DSPy ChainOfThought leaks memory")
+    print(f"\nThis test demonstrates that DSPy {module_name} leaks memory")
     print("even when instances are deleted and garbage collected.\n")
     
     # Configure DSPy with OpenAI (requires OPENAI_API_KEY env var)

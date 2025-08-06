@@ -1,10 +1,10 @@
 # DSPy Memory Leak Reproduction
 
-Minimal reproduction of a memory leak in DSPy's ChainOfThought module.
+Minimal reproduction of memory leaks in DSPy modules.
 
 ## Issue
 
-DSPy's `ChainOfThought` module exhibits a memory leak where memory continuously grows over time during usage, even when:
+DSPy modules exhibit memory leaks where memory continuously grows over time during usage, even when:
 - Creating fresh instances for each use (no caching)
 - Explicitly deleting instances after use  
 - Forcing garbage collection
@@ -12,9 +12,17 @@ DSPy's `ChainOfThought` module exhibits a memory leak where memory continuously 
 ## Reproduction
 
 ```bash
-# Build and run with your OpenAI API key
+# Build the image
 docker build -t dspy-memory-leak .
+
+# Test ChainOfThought module (default)
 docker run --rm -e OPENAI_API_KEY='your-api-key-here' dspy-memory-leak
+
+# Test Predict module  
+docker run --rm -e OPENAI_API_KEY='your-api-key-here' -e DSPY_MODULE=predict dspy-memory-leak
+
+# Test ChainOfThought module (explicit)
+docker run --rm -e OPENAI_API_KEY='your-api-key-here' -e DSPY_MODULE=chainofthought dspy-memory-leak
 ```
 
 ## Expected Behavior
@@ -23,7 +31,7 @@ Memory should stabilize after initial module loading, with instances being prope
 
 ## Actual Behavior  
 
-Memory continuously grows and is never released. The test demonstrates consistent memory growth over time with repeated use of the ChainOfThought module.
+Memory continuously grows and is never released. The test demonstrates consistent memory growth over time with repeated use of DSPy modules.
 
 This causes production issues like:
 - Kubernetes pods autoscaling unnecessarily
@@ -32,7 +40,7 @@ This causes production issues like:
 
 ## Scope
 
-This test specifically targets the `ChainOfThought` module. Other DSPy modules have not been tested yet and may exhibit similar behavior.
+This test supports both `ChainOfThought` and `Predict` modules. Both modules exhibit memory leaks. Additional DSPy modules can be easily added for testing.
 
 ## Environment
 
